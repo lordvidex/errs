@@ -31,6 +31,9 @@ func WrapCode(err error, message string, code Code, stacktrace ...any) error {
 			if e.Code == Unknown {
 				e.Code = e2.Code
 			}
+			if e.Msg == "" {
+				e.Msg = e2.Msg
+			}
 		} else {
 			e.Details = append(e.Details, err.Error())
 		}

@@ -53,6 +53,21 @@ func TestWrap(t *testing.T) {
 			},
 		},
 		{
+			name: "wrapped error message should be used when message is empty",
+			args: args{
+				err: &Error{
+					Code: NotFound,
+					Msg:  "this message is not found",
+				},
+				message: "",
+				code:    Internal,
+			},
+			wantErr: &Error{
+				Code: Internal,
+				Msg:  "this message is not found",
+			},
+		},
+		{
 			name: "wrapped error code should be used when code is unknown",
 			args: args{
 				err: &Error{
