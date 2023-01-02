@@ -53,6 +53,28 @@ func TestWrap(t *testing.T) {
 			},
 		},
 		{
+			name: "wrapped error code should be used when code is unknown",
+			args: args{
+				err: &Error{
+					Code:    NotFound,
+					Msg:     "not found",
+					Details: []any{"error1", "error2"},
+				},
+				message:    "super message",
+				code:       Unknown,
+				stacktrace: []any{"error3"},
+			},
+			wantErr: &Error{
+				Code: NotFound,
+				Msg:  "super message",
+				Details: []any{
+					"error3",
+					"error1",
+					"error2",
+				},
+			},
+		},
+		{
 			name: "error that does not conform to our Error type should be wrapped with a new error",
 			args: args{
 				err:        errors.New("not our error"),

@@ -28,6 +28,9 @@ func WrapCode(err error, message string, code Code, stacktrace ...any) error {
 	if err != nil {
 		if e2, ok := err.(*Error); ok {
 			e.Details = append(e.Details, e2.Details...)
+			if e.Code == Unknown {
+				e.Code = e2.Code
+			}
 		} else {
 			e.Details = append(e.Details, err.Error())
 		}
