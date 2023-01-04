@@ -1,7 +1,10 @@
 package errs
 
-import "net/http"
-import "google.golang.org/grpc/codes"
+import (
+	"net/http"
+
+	"google.golang.org/grpc/codes"
+)
 
 // Code is the type that represents an error code.
 // It can map to HTTP and gRPC codes.
@@ -59,23 +62,28 @@ const (
 // All codes defined by default are mapped from 0 to CodeSize - 1.
 const CodeSize = 15
 
+// String returns the string representation of the code.
 func (c Code) String() string {
 	return codeNames[c]
 }
 
+// MarshalJSON returns the JSON representation of the code.
 func (c Code) MarshalJSON() ([]byte, error) {
 	s := c.String()
 	return []byte("\"" + s + "\""), nil
 }
 
+// HTTP returns the HTTP status code that corresponds to the code.
 func (c Code) HTTP() int {
 	return httpCodes[c]
 }
 
+// GRPC returns the gRPC status code that corresponds to the code.
 func (c Code) GRPC() codes.Code {
 	return grpcCodes[c]
 }
 
+// httpCodes is the mapping of codes to HTTP status codes.
 var httpCodes = [...]int{
 	Unknown:            http.StatusInternalServerError,
 	DataLoss:           http.StatusInternalServerError,
@@ -94,6 +102,7 @@ var httpCodes = [...]int{
 	Unavailable:        http.StatusServiceUnavailable,
 }
 
+// codeNames is the mapping of codes to their string representation.
 var codeNames = [...]string{
 	Unknown:            "unknown",
 	DataLoss:           "data_loss",
@@ -112,6 +121,7 @@ var codeNames = [...]string{
 	Unavailable:        "unavailable",
 }
 
+// grpcCodes is the mapping of codes to gRPC codes.
 var grpcCodes = [...]codes.Code{
 	DataLoss:           codes.DataLoss,
 	Unknown:            codes.Unknown,
