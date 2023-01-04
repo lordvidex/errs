@@ -7,6 +7,7 @@ func B() *Builder {
 	return &Builder{}
 }
 
+// Builder is used to build an instance of `Error` object.
 type Builder struct {
 	code    Code
 	msg     string
@@ -25,7 +26,7 @@ func (b *Builder) Msg(msg string) *Builder {
 	return b
 }
 
-// Msgf formats the message using the given format and parameters.
+// Msgf formats the message using the given format and parameters, similar to fmt.Sprintf.
 func (b *Builder) Msgf(format string, parameters ...any) *Builder {
 	b.msg = fmt.Sprintf(format, parameters...)
 	return b
@@ -37,6 +38,7 @@ func (b *Builder) Details(details ...any) *Builder {
 	return b
 }
 
+// Err returns new instance of `Error`.
 func (b *Builder) Err() error {
 	return &Error{
 		Code:    b.code,
