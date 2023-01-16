@@ -11,7 +11,7 @@ func ExampleBuilder() {
 	str, _ := json.Marshal(err)
 	fmt.Println(string(str))
 
-	// Output: {"code":"unknown","message":"unknown error"}
+	// Output: {"code":"unknown","message":["unknown error"]}
 }
 
 func ExampleBuilder_Msgf() {
@@ -20,5 +20,5 @@ func ExampleBuilder_Msgf() {
 	str, _ := json.Marshal(err)
 	fmt.Println(string(str))
 
-	// Output: {"code":"not_found","message":"file not found: details, 123"}
+	// Output: {"code":"not_found","message":["file not found: details, 123"]}
 }

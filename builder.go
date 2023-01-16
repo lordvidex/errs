@@ -3,40 +3,51 @@ package errs
 import "fmt"
 
 // B returns a new error builder.
-func B() *Builder {
-	return &Builder{}
+// Optionally, you can pass an error instance to the builder, ONLY the first error will be used.
+func B(initial ...error) *Builder {
+	var err *Error
+	if len(initial) <= 0 {
+		err = new(Error)
+	} else {
+		err = Convert(initial[0]).(*Error)
+	}
+	return &Builder{err}
 }
 
 type Builder struct {
-	code    Code
-	msg     string
-	details []any
+	err *Error
 }
 
 func (b *Builder) Code(code Code) *Builder {
-	b.code = code
+	b.err.Code = code
 	return b
 }
 
-func (b *Builder) Msg(msg string) *Builder {
-	b.msg = msg
+func (b *Builder) Msg(msg ...string) *Builder {
+	b.err.Msg = append(b.err.Msg, rmNilStr(msg)...)
 	return b
+}
+
+func rmNilStr(s []string) []string {
+	var r []string
+	for _, v := range s {
+		if v != "" {
+			r = append(r, v)
+		}
+	}
+	return r
 }
 
 func (b *Builder) Msgf(format string, parameters ...any) *Builder {
-	b.msg = fmt.Sprintf(format, parameters...)
+	b.err.Msg = append(b.err.Msg, fmt.Sprintf(format, parameters...))
 	return b
 }
 
 func (b *Builder) Details(details ...any) *Builder {
-	b.details = details
+	b.err.Details = details
 	return b
 }
 
 func (b *Builder) Err() error {
-	return &Error{
-		Code:    b.code,
-		Msg:     b.msg,
-		Details: b.details,
-	}
+	return b.err
 }
