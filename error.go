@@ -47,7 +47,43 @@ func (e *Error) Stack() []string {
 
 // Unwrap returns the underlying error.
 func (e *Error) Unwrap() error {
+	if e.cause == nil {
+		return nil
+	}
 	return e.cause
+}
+
+func (e *Error) Is(target error) bool {
+	if t, ok := target.(*Error); ok {
+		return equalNodes(e, t)
+	}
+	return false
+}
+
+// equalNodes was created because we can't even trust go to compare equality of the error structs.
+// Comparison does not involve the underlying errors because we don't want to compare the entire error tree.
+//
+// The fields considered for equality are error codes and messages. It makes sense to leave details out because two errors
+// might be the same but with different details.
+func equalNodes(a, b *Error) bool {
+	if a == nil && b == nil {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	if a.Code != b.Code {
+		return false
+	}
+	if len(a.Msg) != len(b.Msg) {
+		return false
+	}
+	for i := range a.Msg {
+		if a.Msg[i] != b.Msg[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // WrapMsg wraps an underlying error with a new error, adding message to the error's previously existing message
@@ -60,7 +96,13 @@ func WrapMsg(err error, message ...string) error {
 	return WrapCode(er, code, message...)
 }
 
-// Wrap wraps an underlying error `child` with a new error `parent`
+// Wrap wraps an underlying error `child` with a new error `parent`.
+//
+// - when the child error is nil, the parent error is returned as is.
+//
+// - when the parent error is nil, the child error is returned as is.
+//
+// - when both errors are nil, nil is returned.
 func Wrap(child, parent error) error {
 	parent = Convert(parent)
 	child = Convert(child)
@@ -80,7 +122,7 @@ func Wrap(child, parent error) error {
 	}
 }
 
-// Convert converts an error to an *Error type. If the error is already an *Error, it is returned as is.
+// Convert converts any error to an *Error type. If the error is already an *Error, it is returned as is.
 // nil errors are returned as nil.
 func Convert(err error) error {
 	if err == nil {
