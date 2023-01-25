@@ -2,6 +2,7 @@ package errs
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"testing"
 )
@@ -37,4 +38,70 @@ func TestCode_String(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRegisterCode(t *testing.T) {
+	type args struct {
+		c    Code
+		http int
+		grpc codes.Code
+		desc string
+	}
+	testCases := []struct {
+		name      string
+		args      args
+		shouldErr bool
+	}{
+		{
+			name: "registering entirely new codes",
+			args: args{
+				c:    Code(100),
+				http: 100,
+				grpc: codes.Code(100),
+				desc: "test",
+			},
+		},
+		{
+			name: "overriding existing codes",
+			args: args{
+				c:    NotFound,
+				http: 401,
+				grpc: codes.Unknown,
+				desc: "this is not found",
+			},
+		},
+	}
+	for _, tt := range testCases {
+		t.Run("Register "+tt.name, func(t *testing.T) {
+			// test register
+			RegisterCode(tt.args.c, tt.args.http, tt.args.grpc, tt.args.desc)
+			assert.Equal(t, tt.args.http, tt.args.c.HTTP())
+			assert.Equal(t, tt.args.grpc, tt.args.c.GRPC())
+			assert.Equal(t, tt.args.desc, tt.args.c.String())
+
+			// test register check
+			assert.True(t, IsRegistered(tt.args.c))
+		})
+		t.Run("Unregister "+tt.name, func(t *testing.T) {
+			// unregister and check
+			UnregisterCode(tt.args.c)
+			assert.False(t, IsRegistered(tt.args.c))
+		})
+	}
+
+	// test ClearCodeRegister
+	t.Run("ClearCodeRegister", func(t *testing.T) {
+		// given
+		for _, tt := range testCases {
+			RegisterCode(tt.args.c, tt.args.http, tt.args.grpc, tt.args.desc)
+		}
+
+		// when
+		ClearCodeRegister()
+
+		// then
+		for _, tt := range testCases {
+			assert.False(t, IsRegistered(tt.args.c))
+		}
+	})
 }
