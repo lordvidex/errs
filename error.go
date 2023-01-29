@@ -24,7 +24,7 @@ type Error struct {
 
 // Error returns the error in the format "code: message".
 func (e *Error) Error() string {
-	return e.Code.String() + ": " + e.Msg
+	return e.Code.String() + ": " + strings.Join(e.Msg, ": ")
 }
 
 // Stack returns a description of the error and all it's underlying errors.
