@@ -1,7 +1,10 @@
 package errs
 
-import "net/http"
-import "google.golang.org/grpc/codes"
+import (
+	"net/http"
+
+	"google.golang.org/grpc/codes"
+)
 
 func init() {
 	initMaps()

@@ -22,6 +22,7 @@ type Error struct {
 	depth int
 }
 
+// Error returns the error in the format "code: message".
 func (e *Error) Error() string {
 	return e.Code.String() + ": " + strings.Join(e.Msg, ": ")
 }

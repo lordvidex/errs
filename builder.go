@@ -22,15 +22,18 @@ func B(initial ...error) *Builder {
 	return &Builder{err}
 }
 
+// Builder is used to build an instance of `Error` object.
 type Builder struct {
 	err *Error
 }
 
+// Code sets the code of the error.
 func (b *Builder) Code(code Code) *Builder {
 	b.err.Code = code
 	return b
 }
 
+// Msg sets the message of the error.
 func (b *Builder) Msg(msg ...string) *Builder {
 	b.err.Msg = append(b.err.Msg, rmNilStr(msg)...)
 	return b
@@ -46,16 +49,19 @@ func rmNilStr(s []string) []string {
 	return r
 }
 
+// Msgf formats the message using the given format and parameters, similar to fmt.Sprintf.
 func (b *Builder) Msgf(format string, parameters ...any) *Builder {
 	b.err.Msg = append(b.err.Msg, fmt.Sprintf(format, parameters...))
 	return b
 }
 
+// Details adds details to the error.
 func (b *Builder) Details(details ...any) *Builder {
 	b.err.Details = details
 	return b
 }
 
+// Err returns new instance of `Error`.
 func (b *Builder) Err() error {
 	return b.err
 }
