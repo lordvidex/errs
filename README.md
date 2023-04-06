@@ -1,4 +1,4 @@
-# errs [![CI Test](https://github.com/lordvidex/errs/actions/workflows/test.yml/badge.svg)](https://github.com/lordvidex/errs/actions/workflows/test.yml)
+# errs [![CI Test](https://github.com/lordvidex/errs/actions/workflows/test.yml/badge.svg)](https://github.com/lordvidex/errs/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/lordvidex/errs/branch/main/graph/badge.svg?token=2LNPZZAQ56)](https://codecov.io/gh/lordvidex/errs)
 This package provides a simple error type that can be used to map errors to HTTP and GRPC status codes.
 
 It is heavily inspired by [encore.dev/beta/errs](https://encore.dev/beta/errs) but adds support for GRPC codes.
