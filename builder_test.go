@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleBuilder() {
@@ -14,16 +15,16 @@ func ExampleBuilder() {
 	str, _ := json.Marshal(err)
 	fmt.Println(string(str))
 
-	// Output: {"code":"unknown","message":["unknown error"]}
+	// Output: {"code":"unknown","message":["unknown error"],"op":""}
 }
 
 func ExampleBuilder_Msgf() {
-	b := B().Code(NotFound).Msgf("file not found: %s, %d", "details", 123)
+	b := B().Code(NotFound).Msgf("file not found: %s, %d", "details", 123).Op("File.Open")
 	err := b.Err()
 	str, _ := json.Marshal(err)
 	fmt.Println(string(str))
 
-	// Output: {"code":"not_found","message":["file not found: details, 123"]}
+	// Output: {"code":"not_found","message":["file not found: details, 123"],"op":"File.Open"}
 }
 
 func TestBuilder(t *testing.T) {

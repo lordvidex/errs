@@ -12,6 +12,9 @@ type Error struct {
 	// Msg is the user-friendly message returned to the client.
 	Msg []string `json:"message"`
 
+	// Op operation where error occured
+	Op string `json:"op"`
+
 	// Details is the internal error message returned to the developer.
 	Details []any `json:"-"`
 
@@ -24,7 +27,7 @@ type Error struct {
 
 // Error returns the error in the format "code: message".
 func (e *Error) Error() string {
-	return e.Code.String() + ": " + strings.Join(e.Msg, ": ")
+	return e.Code.String() + ": " + e.Op + ": " + strings.Join(e.Msg, ": ")
 }
 
 // Stack returns a description of the error and all it's underlying errors.
@@ -74,6 +77,9 @@ func equalNodes(a, b *Error) bool {
 		return false
 	}
 	if a.Code != b.Code {
+		return false
+	}
+	if a.Op != b.Op {
 		return false
 	}
 	if len(a.Msg) != len(b.Msg) {

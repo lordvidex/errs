@@ -39,6 +39,12 @@ func (b *Builder) Msg(msg ...string) *Builder {
 	return b
 }
 
+// Op sets the operation where the error occured
+func (b *Builder) Op(op string) *Builder {
+	b.err.Op = op
+	return b
+}
+
 func rmNilStr(s []string) []string {
 	var r []string
 	for _, v := range s {
