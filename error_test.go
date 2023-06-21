@@ -3,9 +3,10 @@ package errs
 import (
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestWrap(t *testing.T) {
@@ -39,10 +40,11 @@ func TestWrap(t *testing.T) {
 		{
 			name:   "child and parent are provided",
 			child:  B().Code(NotFound).Msg("child").Err(),
-			parent: B().Code(Internal).Msg("parent").Err(),
+			parent: B().Code(Internal).Msg("parent").Op("UserRepository.CreateUser").Err(),
 			expect: &Error{
 				Code: Internal,
 				Msg:  []string{"parent"},
+				Op:   "UserRepository.CreateUser",
 				cause: &Error{
 					Code: NotFound,
 					Msg:  []string{"child"},
@@ -278,9 +280,9 @@ func TestError_Wrap(t *testing.T) {
 }
 
 func ExampleError_Error() {
-	err := B().Code(NotFound).Msg("item not found").Err()
+	err := B().Code(NotFound).Msg("item not found").Op("FetchItem").Err()
 	fmt.Println(err.Error())
-	// Output: not_found: item not found
+	// Output: not_found: FetchItem: item not found
 }
 
 var e error
