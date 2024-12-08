@@ -11,11 +11,9 @@ import (
 
 func ExampleBuilder() {
 	b := B().Code(Unknown).Msg("unknown error").Details("details")
-	err := b.Err()
-	str, _ := json.Marshal(err)
-	fmt.Println(string(str))
+	fmt.Println(b.Err())
 
-	// Output: {"code":"unknown","message":["unknown error"],"op":""}
+	// Output: unknown: unknown error
 }
 
 func ExampleBuilder_Msgf() {
@@ -24,7 +22,40 @@ func ExampleBuilder_Msgf() {
 	str, _ := json.Marshal(err)
 	fmt.Println(string(str))
 
-	// Output: {"code":"not_found","message":["file not found: details, 123"],"op":"File.Open"}
+	// Output: {"op":"File.Open","message":["file not found: details, 123"],"code":"not_found"}
+}
+
+func TestWrapB(t *testing.T) {
+	tests := []struct {
+		// given
+		inner            error
+		name             string
+		expectDepth      int
+		expectShownDepth int
+		expectErr        string
+	}{
+		{
+			name:      "wrapping nil error",
+			inner:     nil,
+			expectErr: "unknown",
+		},
+		{
+			name:             "wrapping existing wrapped error",
+			inner:            Wrap(B().Msg("inner0").Show().Err(), B().Msg("inner1").Err()),
+			expectDepth:      2,
+			expectShownDepth: 1,
+			expectErr:        "unknown\nunknown: inner0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := WrapB(tt.inner)
+			assert.Equal(t, tt.expectDepth, got.err.depth)
+			assert.Equal(t, tt.expectShownDepth, got.err.shownDepth)
+			assert.Equal(t, tt.expectErr, got.err.Error())
+		})
+	}
 }
 
 func TestBuilder(t *testing.T) {
