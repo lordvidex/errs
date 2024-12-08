@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"iter"
 	"strings"
 )
 
@@ -46,7 +45,7 @@ func (e *Error) Error() string {
 
 	if e.cause != nil {
 		// print the underlying error only if shown
-		for inner := range shown(e.cause) {
+		for _, inner := range shown(e.cause) {
 			buf.WriteString("\n")
 			inner.writeTo(&buf)
 		}
@@ -214,29 +213,4 @@ func WrapCode(err error, code Code, messages ...string) error {
 	}
 	e.wrap(er)
 	return e
-}
-
-// shown iterates and yields only errors that should be shown
-func shown(e *Error) iter.Seq[*Error] {
-	return func(yield func(er *Error) bool) {
-		for er := e; er != nil && er.shownDepth > 0; er = er.cause {
-			if !er.show {
-				continue
-			}
-			if !yield(er) {
-				return
-			}
-		}
-	}
-}
-
-// all iterates all inner errors
-func all(e *Error) iter.Seq2[int, *Error] {
-	return func(yield func(i int, er *Error) bool) {
-		for i, er := 0, e; er != nil; i, er = i+1, er.cause {
-			if !yield(i, er) {
-				return
-			}
-		}
-	}
 }
