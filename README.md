@@ -4,7 +4,7 @@ This package provides a simple error type that can be used to map errors to HTTP
 It is heavily inspired by [encore.dev/beta/errs](https://encore.dev/beta/errs) but adds support for GRPC codes.
 
 ## Usage
-- go docs https://pkg.go.dev/github.com/lordvidex/errs
+- go docs https://pkg.go.dev/github.com/lordvidex/errs/v2
 - Examples:
 
 ```go
@@ -12,7 +12,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/lordvidex/errs"
+	"github.com/lordvidex/errs/v2"
 	"encoding/json"
 )
 
