@@ -1,10 +1,11 @@
 package example
 
 import (
-	"github.com/lordvidex/errs"
+	"testing"
+
+	"github.com/lordvidex/errs/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestRegister(t *testing.T) {

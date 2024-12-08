@@ -1,52 +1,96 @@
 package errs
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"iter"
 	"strings"
 )
 
-type Error struct {
-	// Code is the error code of the error. When marshaled to JSON, it will be a string.
-	Code Code `json:"code"`
+// Separator is the default separator between elements of a single error
+var Separator = ": "
 
-	// Msg is the user-friendly message returned to the client.
-	Msg []string `json:"message"`
+type Error struct {
+	// underlying error
+	cause *Error
 
 	// Op operation where error occured
 	Op string `json:"op"`
 
+	// Msg is the user-friendly message returned to the client.
+	Msg []string `json:"message"`
+
 	// Details is the internal error message returned to the developer.
 	Details []any `json:"-"`
 
-	// underlying error
-	cause *Error
+	// Code is the error code of the error. When marshaled to JSON, it will be a string.
+	Code Code `json:"code"`
+
+	// show is a flag that indicates whether the error would be visible when wrapped by another error
+	show bool
 
 	// depth of the error tree
-	depth int
+	depth      int
+	shownDepth int
 }
 
-// Error returns the error in the format "code: message".
+// Error returns the error in the format "code: message\ninner_code: inner_message" for this error and SHOWN underlying errors.
 func (e *Error) Error() string {
-	return e.Code.String() + ": " + e.Op + ": " + strings.Join(e.Msg, ": ")
+	if e == nil {
+		return ""
+	}
+
+	buf := strings.Builder{}
+	e.writeTo(&buf)
+
+	if e.cause != nil {
+		// print the underlying error only if shown
+		for inner := range shown(e.cause) {
+			buf.WriteString("\n")
+			inner.writeTo(&buf)
+		}
+	}
+
+	return buf.String()
+}
+
+// String returns the error in the format "code: message".
+func (e *Error) String() string {
+	var buf strings.Builder
+	e.writeTo(&buf)
+	return buf.String()
+}
+
+func (e *Error) writeTo(w io.StringWriter) {
+	w.WriteString(e.Code.String())
+	if len(e.Op) > 0 {
+		w.WriteString(Separator + e.Op)
+	}
+
+	msgs := strings.Join(cleanStrings(e.Msg), Separator)
+	if len(msgs) > 0 {
+		w.WriteString(Separator + msgs)
+	}
 }
 
 // Stack returns a description of the error and all it's underlying errors.
-func (e *Error) Stack() []string {
-	stack := make([]string, e.depth+1)
-	for i, err := 0, e; err != nil; err, i = err.cause, i+1 {
+func (e *Error) Stack() string {
+	var buf strings.Builder
+	for i, er := range all(e) {
 		tabOffset := strings.Repeat("\t", i)
-		var buf strings.Builder
 		write := func(s string) {
 			buf.WriteString(tabOffset)
 			buf.WriteString(s)
 		}
-		write(err.Error() + "\n")
-		for dx, d := range err.Details {
+		write(er.String() + "\n")
+		for dx, d := range er.Details {
 			write(fmt.Sprintf("\t%d: %v\n", dx, d))
 		}
-		stack[i] = buf.String()
+		buf.WriteString("\n")
 	}
-	return stack
+
+	return buf.String()
 }
 
 // Unwrap returns the underlying error.
@@ -57,8 +101,21 @@ func (e *Error) Unwrap() error {
 	return e.cause
 }
 
+func (e *Error) wrap(inner *Error) {
+	e.cause = inner
+	if inner == nil {
+		return
+	}
+	e.depth = inner.depth + 1
+	e.shownDepth = inner.shownDepth
+	if e.show {
+		e.shownDepth++
+	}
+}
+
 func (e *Error) Is(target error) bool {
-	if t, ok := target.(*Error); ok {
+	var t *Error
+	if errors.As(target, &t) {
 		return equalNodes(e, t)
 	}
 	return false
@@ -123,8 +180,7 @@ func Wrap(child, parent error) error {
 	default:
 		p := parent.(*Error)
 		c := child.(*Error)
-		p.cause = c
-		p.depth = c.depth + 1
+		p.wrap(c)
 		return p
 	}
 }
@@ -135,7 +191,8 @@ func Convert(err error) error {
 	if err == nil {
 		return nil
 	}
-	if e, ok := err.(*Error); ok {
+	var e *Error
+	if errors.As(err, &e) {
 		return e
 	}
 	return &Error{
@@ -146,15 +203,40 @@ func Convert(err error) error {
 
 // WrapCode wraps an underlying error with a new error, adding message to the error's previously existing message and setting the error code to code.
 func WrapCode(err error, code Code, messages ...string) error {
-	er := Convert(err)
-	if er == nil {
-		return B().Code(code).Msg(rmNilStr(messages)...).Err()
+	err = Convert(err)
+	if err == nil {
+		return B().Code(code).Msg(cleanStrings(messages)...).Err()
 	}
-	e := er.(*Error)
-	return &Error{
-		Code:  code,
-		cause: e,
-		Msg:   rmNilStr(messages),
-		depth: e.depth + 1,
+	er := err.(*Error)
+	e := &Error{
+		Code: code,
+		Msg:  cleanStrings(messages),
+	}
+	e.wrap(er)
+	return e
+}
+
+// shown iterates and yields only errors that should be shown
+func shown(e *Error) iter.Seq[*Error] {
+	return func(yield func(er *Error) bool) {
+		for er := e; er != nil && er.shownDepth > 0; er = er.cause {
+			if !er.show {
+				continue
+			}
+			if !yield(er) {
+				return
+			}
+		}
+	}
+}
+
+// all iterates all inner errors
+func all(e *Error) iter.Seq2[int, *Error] {
+	return func(yield func(i int, er *Error) bool) {
+		for i, er := 0, e; er != nil; i, er = i+1, er.cause {
+			if !yield(i, er) {
+				return
+			}
+		}
 	}
 }

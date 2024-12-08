@@ -1,7 +1,7 @@
 package example
 
 import (
-	"github.com/lordvidex/errs"
+	"github.com/lordvidex/errs/v2"
 	"google.golang.org/grpc/codes"
 )
 
