@@ -268,10 +268,25 @@ func TestWrapCode(t *testing.T) {
 }
 
 func ExampleError_Stack() {
-	err1 := B().Code(NotFound).Msg("item not found").Err()
+	err1 := B().Code(NotFound).
+		Msg("item not found").
+		Details("first detail", "second detail", 1, 2, 3, 4).
+		Err()
 	err2 := B().Code(Internal).Msg("internal error").Err()
 	err, _ := Wrap(err2, err1).(*Error)
-	fmt.Print(err.Stack())
+
+	fmt.Println(err.Stack())
+
+	//Output:
+	//not_found: item not found
+	//	0: first detail
+	//	1: second detail
+	//	2: 1
+	//	3: 2
+	//	4: 3
+	//	5: 4
+	//
+	// 	internal: internal error
 }
 
 func TestError_Wrap(t *testing.T) {
@@ -279,10 +294,74 @@ func TestError_Wrap(t *testing.T) {
 	assert.Equal(t, &Error{Code: Unknown, Msg: []string{"test"}, Details: nil}, err)
 }
 
+func TestError_Error(t *testing.T) {
+	tests := []struct {
+		name   string
+		err    *Error
+		expect string
+	}{
+		{
+			name:   "empty error",
+			err:    nil,
+			expect: "",
+		},
+		{
+			name:   "single error",
+			err:    B().Code(NotFound).Msg("item not found").err,
+			expect: "not_found: item not found",
+		},
+		{
+			name: "wrapped errors",
+			err: Wrap(
+				Wrap(
+					B().Code(NotFound).Msg("item not found").Err(),
+					B().Code(Aborted).Msg("some db error happened").Err(),
+				),
+				B().Code(Internal).Msg("internal error").Err(),
+			).(*Error),
+			expect: "internal: internal error",
+		},
+		{
+			name: "wrapped error but shown",
+			err: Wrap(
+				Wrap(
+					B().Code(NotFound).Msg("item not found").Show().Err(),
+					B().Code(Aborted).Msg("some db error happened").Show().Err(),
+				),
+				B().Code(Internal).Msg("internal error").Err(),
+			).(*Error),
+			expect: "internal: internal error" + "\n" +
+				"aborted: some db error happened" + "\n" +
+				"not_found: item not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expect, tt.err.Error())
+			t.Log(tt.err.Error())
+		})
+	}
+}
+
 func ExampleError_Error() {
 	err := B().Code(NotFound).Msg("item not found").Op("FetchItem").Err()
 	fmt.Println(err.Error())
 	// Output: not_found: FetchItem: item not found
+}
+
+func ExampleError_Error_innershown() {
+	// when `show` is set, the error is shown to the user if wrapped by another error instance.
+	// By default, inner errors are not shown.
+
+	inner := B().Code(Aborted).Msg("some db connection failed").Op("Postgres").Show().Err()
+	err := WrapB(inner).Code(NotFound).Msg("item not found").Op("FetchItem").Err()
+
+	fmt.Println(err.Error())
+	// Output:
+	//not_found: FetchItem: item not found
+	//aborted: Postgres: some db connection failed
+
 }
 
 var e error

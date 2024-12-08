@@ -1,6 +1,10 @@
 package errs
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 // B returns a new error builder.
 // Optionally, you can pass an error instance to the builder, ONLY the first error will be used.
@@ -22,6 +26,15 @@ func B(initial ...error) *Builder {
 	return &Builder{err}
 }
 
+// WrapB wraps an underlying error and returns a builder for the new error.
+func WrapB(err error) *Builder {
+	var cause *Error
+	errors.As(err, &cause)
+	b := B(nil)
+	b.err.wrap(cause)
+	return b
+}
+
 // Builder is used to build an instance of `Error` object.
 type Builder struct {
 	err *Error
@@ -35,7 +48,7 @@ func (b *Builder) Code(code Code) *Builder {
 
 // Msg sets the message of the error.
 func (b *Builder) Msg(msg ...string) *Builder {
-	b.err.Msg = append(b.err.Msg, rmNilStr(msg)...)
+	b.err.Msg = append(b.err.Msg, cleanStrings(msg)...)
 	return b
 }
 
@@ -45,11 +58,11 @@ func (b *Builder) Op(op string) *Builder {
 	return b
 }
 
-func rmNilStr(s []string) []string {
+func cleanStrings(s []string) []string {
 	var r []string
 	for _, v := range s {
 		if v != "" {
-			r = append(r, v)
+			r = append(r, strings.TrimSpace(v))
 		}
 	}
 	return r
@@ -64,6 +77,19 @@ func (b *Builder) Msgf(format string, parameters ...any) *Builder {
 // Details adds details to the error.
 func (b *Builder) Details(details ...any) *Builder {
 	b.err.Details = details
+	return b
+}
+
+// Show sets the show flag of the error.
+// If this error is wrapped by another error, it's shown to users.
+func (b *Builder) Show() *Builder {
+	old := b.err.show
+	if old {
+		return b
+	}
+
+	b.err.shownDepth++
+	b.err.show = true
 	return b
 }
 
