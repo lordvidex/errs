@@ -21,7 +21,7 @@ func B(initial ...error) *Builder {
 	if len(initial) <= 0 || initial[0] == nil {
 		err = new(Error)
 	} else {
-		err = Convert(initial[0]).(*Error)
+		err = convert(initial[0])
 	}
 	return &Builder{err}
 }

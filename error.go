@@ -35,6 +35,16 @@ type Error struct {
 	shownDepth int
 }
 
+// knownCode returns the first known code of the error and all underlying errors
+func (e *Error) knownCode() Code {
+	for _, er := range all(e) {
+		if er.Code != Unknown {
+			return er.Code
+		}
+	}
+	return Unknown
+}
+
 // Error returns the error in the format "code: message\ninner_code: inner_message" for this error and SHOWN underlying errors.
 func (e *Error) Error() string {
 	if e == nil {
@@ -111,6 +121,7 @@ func (e *Error) wrap(inner *Error) {
 	if e.show {
 		e.shownDepth++
 	}
+	e.Code = e.knownCode()
 }
 
 func (e *Error) Is(target error) bool {
@@ -153,9 +164,9 @@ func equalNodes(a, b *Error) bool {
 // WrapMsg wraps an underlying error with a new error, adding message to the error's previously existing message
 func WrapMsg(err error, message ...string) error {
 	code := Unknown
-	er := Convert(err)
+	er := convert(err)
 	if er != nil {
-		code = er.(*Error).Code
+		code = er.Code
 	}
 	return WrapCode(er, code, message...)
 }
@@ -168,18 +179,16 @@ func WrapMsg(err error, message ...string) error {
 //
 // - when both errors are nil, nil is returned.
 func Wrap(child, parent error) error {
-	parent = Convert(parent)
-	child = Convert(child)
+	p := convert(parent)
+	c := convert(child)
 	switch {
-	case parent == nil && child == nil:
+	case p == nil && c == nil:
 		return nil
-	case parent == nil:
-		return child
-	case child == nil:
-		return parent
+	case p == nil:
+		return c
+	case c == nil:
+		return p
 	default:
-		p := parent.(*Error)
-		c := child.(*Error)
 		p.wrap(c)
 		return p
 	}
@@ -203,17 +212,25 @@ func Convert(err error) error {
 
 // WrapCode wraps an underlying error with a new error, adding message to the error's previously existing message and setting the error code to code.
 func WrapCode(err error, code Code, messages ...string) error {
-	err = Convert(err)
-	if err == nil {
+	er := convert(err)
+	if er == nil {
 		return B().Code(code).Msg(cleanStrings(messages)...).Err()
 	}
-	er := err.(*Error)
+
 	e := &Error{
 		Code: code,
 		Msg:  cleanStrings(messages),
 	}
 	e.wrap(er)
 	return e
+}
+
+func convert(err error) *Error {
+	e := Convert(err)
+	if e == nil {
+		return nil
+	}
+	return e.(*Error)
 }
 
 // shown iterates and yields only errors that should be shown
