@@ -6,5 +6,5 @@ import (
 
 // GRPCStatus returns a *status.Status representation of *errs.Error
 func (e *Error) GRPCStatus() *status.Status {
-	return status.New(e.Code.GRPC(), e.Error())
+	return status.New(e.knownCode().GRPC(), e.Error())
 }
